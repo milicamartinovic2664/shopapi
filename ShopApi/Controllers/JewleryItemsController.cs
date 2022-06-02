@@ -15,12 +15,10 @@ namespace ShopApi.Controllers
     [ApiController]
     public class JewleryItemsController : ControllerBase
     {
-        private readonly ApiContext context;
         private readonly IJewleryItemService jewleryItemService;
 
-        public JewleryItemsController(ApiContext context, IJewleryItemService jewleryItemService)
+        public JewleryItemsController(IJewleryItemService jewleryItemService)
         {
-            this.context = context;
             this.jewleryItemService = jewleryItemService;
         }
 
@@ -28,23 +26,20 @@ namespace ShopApi.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<JewleryItem>>> GetJewleryItems()
         {
-            if (context.JewleryItems is null)
+            var items = await jewleryItemService.GetJewleryItems();
+
+            if (!items.Any())
             {
                 return NotFound();
             }
 
-            return await jewleryItemService.GetJewleryItems();
+            return Ok(items);
         }
 
         // GET: api/JewleryItems/5
         [HttpGet("{id}")]
         public async Task<ActionResult<JewleryItem>> GetJewleryItem(long id)
         {
-            if (context.JewleryItems is null)
-            {
-                return NotFound();
-            }
-
             var jewleryItem = await jewleryItemService.GetJewleryItemById(id);
 
             if (jewleryItem is null)
@@ -52,13 +47,13 @@ namespace ShopApi.Controllers
                 return NotFound();
             }
 
-            return jewleryItem;
+            return Ok(jewleryItem);
         }
 
         // PUT: api/JewleryItems/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutJewleryItem(long id, JewleryItem jewleryItem)
+        public async Task<ActionResult<JewleryItem>> PutJewleryItem(long id, JewleryItem jewleryItem)
         {
             if (id != jewleryItem.Id)
             {
@@ -67,13 +62,13 @@ namespace ShopApi.Controllers
 
             try
             {
-                await jewleryItemService.UpdateJewleryItem(id, jewleryItem);
+                var item = await jewleryItemService.UpdateJewleryItem(id, jewleryItem);
 
-                return Ok();
+                return Ok(item);
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!JewleryItemExists(id))
+                if (!jewleryItemService.JewleryItemExists(id))
                 {
                     return NotFound();
                 }
@@ -89,11 +84,6 @@ namespace ShopApi.Controllers
         [HttpPost]
         public async Task<ActionResult<JewleryItem>> PostJewleryItem(JewleryItem jewleryItem)
         {
-            if (context.JewleryItems is null)
-            {
-                return Problem("Entity set 'JewleryItemContext.JewleryItems'  is null.");
-            }
-
             await jewleryItemService.CreateJewleryItem(jewleryItem);
             
             return CreatedAtAction(nameof(GetJewleryItem), new { id = jewleryItem.Id }, jewleryItem);
@@ -101,21 +91,18 @@ namespace ShopApi.Controllers
 
         // DELETE: api/JewleryItems/5
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteJewleryItem(long id)
+        public async Task<ActionResult<JewleryItem>> DeleteJewleryItem(long id)
         {
-            if (context.JewleryItems is null)
+            var item = await jewleryItemService.GetJewleryItemById(id);
+            
+            if (item is null)
             {
                 return NotFound();
             }
 
             await jewleryItemService.DeleteJewleryItem(id);
 
-            return Ok();
-        }
-
-        private bool JewleryItemExists(long id)
-        {
-            return (context.JewleryItems?.Any(e => e.Id == id)).GetValueOrDefault();
+            return Ok(item);
         }
     }
 }

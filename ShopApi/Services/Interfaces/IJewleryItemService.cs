@@ -5,10 +5,11 @@ namespace ShopApi.Services.Interfaces
 {
     public interface IJewleryItemService
     {
-        Task<ActionResult<IEnumerable<JewleryItem>>> GetJewleryItems();
+        Task<IEnumerable<JewleryItem>> GetJewleryItems();
         Task<JewleryItem?> GetJewleryItemById(long id);
-        Task UpdateJewleryItem(long id, JewleryItem jewleryItem);
+        Task<JewleryItem> UpdateJewleryItem(long id, JewleryItem jewleryItem);
         Task CreateJewleryItem(JewleryItem jewleryItem);
         Task DeleteJewleryItem(long jewleryItemId);
+        bool JewleryItemExists(long id);
     }
 }

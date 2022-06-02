@@ -21,7 +21,7 @@ namespace ShopApi.Services
             return await _context.JewleryItems.FindAsync(id);
         }
 
-        public async Task<ActionResult<IEnumerable<JewleryItem>>> GetJewleryItems()
+        public async Task<IEnumerable<JewleryItem>> GetJewleryItems()
         {
             return await _context
                 .JewleryItems
@@ -48,7 +48,7 @@ namespace ShopApi.Services
             await _context.SaveChangesAsync();
         }
 
-        public async Task UpdateJewleryItem(long id, JewleryItem jewleryItem)
+        public async Task<JewleryItem> UpdateJewleryItem(long id, JewleryItem jewleryItem)
         {
             var existingItem = await _context
                 .JewleryItems
@@ -76,6 +76,13 @@ namespace ShopApi.Services
             _context.Entry(jewleryItem).State = EntityState.Modified;
 
             await _context.SaveChangesAsync();
+
+            return jewleryItem;
+        }
+
+        public bool JewleryItemExists(long id)
+        {
+            return (_context.JewleryItems?.Any(e => e.Id == id)).GetValueOrDefault();
         }
 
         public async Task DeleteJewleryItem(long jewleryItemId)

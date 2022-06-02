@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Moq;
 using ShopApi.Controllers;
 using ShopApi.Models;
@@ -12,18 +13,21 @@ namespace ShopTest
     [TestClass]
     public class ShopTest
     {
-        public ShopTest() 
+        private readonly Mock<IJewleryItemService> serviceMock;
+        private readonly JewleryItemsController controller;
+
+        public ShopTest(ILogger logger)
         {
+            serviceMock = new Mock<IJewleryItemService>();
+
+            controller = new JewleryItemsController(serviceMock.Object, logger);
         }
 
         [TestMethod()]
-        public async Task JewleryItemGetAllSuccess()
+        public async Task GetJewleryItems_NotEmptyResults_ReturnsIEnumerable()
         {
-            var serviceMock = new Mock<IJewleryItemService>();
-
-            serviceMock.Setup(p => p.GetJewleryItems()).ReturnsAsync(GetJewleryItems);
-
-            var controller = new JewleryItemsController(serviceMock.Object);
+            serviceMock.Setup(p => p.GetJewleryItems())
+                .ReturnsAsync(GetJewleryItems());
 
             var result = await controller.GetJewleryItems();
 
@@ -37,17 +41,14 @@ namespace ShopTest
             var listJewleryItems = list?.Value as IEnumerable<JewleryItem>;
 
             Assert.AreEqual(2, listJewleryItems?.Count() ?? 0);
-            
         }
 
         [TestMethod()]
-        public async Task JewleryItemGetAllNotFound()
+        public async Task GetJewleryItem_EmptyResults_ReturnsNotFound()
         {
-            var serviceMock = new Mock<IJewleryItemService>();
-
-            serviceMock.Setup(p => p.GetJewleryItems()).ReturnsAsync(Enumerable.Empty<JewleryItem>);
-
-            var controller = new JewleryItemsController(serviceMock.Object);
+            serviceMock.Setup(p => 
+                p.GetJewleryItems())
+                    .ReturnsAsync(Enumerable.Empty<JewleryItem>);
 
             var result = await controller.GetJewleryItems();
 
@@ -60,20 +61,15 @@ namespace ShopTest
         }
 
         [TestMethod()]
-        public async Task JewleryItemGetByIdSuccess()
+        public async Task GetJewleryItemById_OkResult_ReturnsJewleryItem()
         {
-            long jewleryItemId = 1;
-
-            var serviceMock = new Mock<IJewleryItemService>();
+            long jewleryItemId = 0;
 
             serviceMock.Setup(
                 p => p.GetJewleryItemById(jewleryItemId))
-                    .ReturnsAsync(
-                        GetJewleryItemById(jewleryItemId));
+                    .ReturnsAsync(Mock.Of<JewleryItem>());
 
-            var controller = new JewleryItemsController(serviceMock.Object);
-
-            var result = await controller.GetJewleryItem(1);
+            var result = await controller.GetJewleryItem(jewleryItemId);
 
             //Assert
             Assert.IsInstanceOfType(result.Result, typeof(OkObjectResult));
@@ -84,20 +80,17 @@ namespace ShopTest
 
             var item = resultValue?.Value as JewleryItem;
 
-            Assert.AreEqual(jewleryItemId, item?.Id ?? 0);
+            Assert.AreEqual(jewleryItemId, item?.Id);
         }
 
         [TestMethod()]
-        public async Task JewleryItemGetByIdNotFound()
+        public async Task GetJewleryItemById_EmptyResult_ReturnsNotFound()
         {
             long jewleryItemId = 3;
-            var serviceMock = new Mock<IJewleryItemService>();
 
             serviceMock.Setup(
                 p => p.GetJewleryItemById(jewleryItemId))
                     .ReturnsAsync(() => null);
-
-            var controller = new JewleryItemsController(serviceMock.Object);
 
             var result = await controller.GetJewleryItem(jewleryItemId);
 
@@ -109,17 +102,13 @@ namespace ShopTest
         }
 
         [TestMethod()]
-        public async Task PostJewleryItemSuccess()
+        public async Task CreateJewleryItem_Success_CreatedAtActionResult()
         {
-            var jewleryItem = GetJewleryItemById(1);
-
-            var serviceMock = new Mock<IJewleryItemService>();
+            var jewleryItem = Mock.Of<JewleryItem>();
 
             serviceMock.Setup(
                 p => p.CreateJewleryItem(jewleryItem))
                     .Returns(Task.CompletedTask);
-
-            var controller = new JewleryItemsController(serviceMock.Object);
 
             var result = await controller.PostJewleryItem(jewleryItem);
 
@@ -127,19 +116,15 @@ namespace ShopTest
         }
 
         [TestMethod()]
-        public async Task PutJewleryItemSuccess()
+        public async Task PutJewleryItem_Success_OkObjectResult()
         {
-            long itemId = 1;
+            long itemId = 0;
 
-            var jewleryItem = GetJewleryItemById(itemId);
-
-            var serviceMock = new Mock<IJewleryItemService>();
+            var jewleryItem = Mock.Of<JewleryItem>();
 
             serviceMock.Setup(
                 p => p.UpdateJewleryItem(itemId, jewleryItem))
                     .ReturnsAsync(jewleryItem);
-
-            var controller = new JewleryItemsController(serviceMock.Object);
 
             var result = await controller.PutJewleryItem(itemId, jewleryItem);
 
@@ -147,19 +132,15 @@ namespace ShopTest
         }
 
         [TestMethod()]
-        public async Task PutJewleryItemFail()
+        public async Task PutJewleryItem_Fail_BadRequestResult()
         {
             long itemId = 1;
 
-            var jewleryItem = GetJewleryItemById(itemId);
-
-            var serviceMock = new Mock<IJewleryItemService>();
+            var jewleryItem = Mock.Of<JewleryItem>();
 
             serviceMock.Setup(
                 p => p.UpdateJewleryItem(itemId, jewleryItem))
                     .ReturnsAsync(jewleryItem);
-
-            var controller = new JewleryItemsController(serviceMock.Object);
 
             var result = await controller.PutJewleryItem(2, jewleryItem);
 
@@ -167,13 +148,11 @@ namespace ShopTest
         }
 
         [TestMethod()]
-        public async Task DeleteJewleryItemSuccess()
+        public async Task DeleteJewleryItem_Success_OkObjectResult()
         {
             long itemId = 1;
 
-            var jewleryItem = GetJewleryItemById(itemId);
-
-            var serviceMock = new Mock<IJewleryItemService>();
+            var jewleryItem = Mock.Of<JewleryItem>();
 
             serviceMock.Setup(
                 p => p.DeleteJewleryItem(itemId))
@@ -182,20 +161,16 @@ namespace ShopTest
                 p => p.GetJewleryItemById(itemId))
                     .ReturnsAsync(jewleryItem);
 
-            var controller = new JewleryItemsController(serviceMock.Object);
-
-            var result = await controller.DeleteJewleryItem(1);
+            var result = await controller.DeleteJewleryItem(itemId);
 
             Assert.IsInstanceOfType(result.Result, typeof(OkObjectResult));
         }
         [TestMethod()]
-        public async Task DeleteJewleryItemNotFound()
+        public async Task DeleteJewleryItem_Fail_NotFoundResult()
         {
             long itemId = 1;
 
-            var jewleryItem = GetJewleryItemById(itemId);
-
-            var serviceMock = new Mock<IJewleryItemService>();
+            var jewleryItem = Mock.Of<JewleryItem>();
 
             serviceMock.Setup(
                 p => p.DeleteJewleryItem(itemId))
@@ -204,15 +179,10 @@ namespace ShopTest
                 p => p.GetJewleryItemById(itemId))
                     .ReturnsAsync(() => null);
 
-            var controller = new JewleryItemsController(serviceMock.Object);
-
             var result = await controller.DeleteJewleryItem(1);
 
             Assert.IsInstanceOfType(result.Result, typeof(NotFoundResult));
         }
-
-        private JewleryItem GetJewleryItemById(long id)
-            => GetJewleryItems().First(item => item.Id == id);
 
         private IEnumerable<JewleryItem> GetJewleryItems()
         {

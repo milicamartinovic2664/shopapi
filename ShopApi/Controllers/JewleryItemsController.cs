@@ -16,10 +16,12 @@ namespace ShopApi.Controllers
     public class JewleryItemsController : ControllerBase
     {
         private readonly IJewleryItemService jewleryItemService;
+        private readonly ILogger logger;
 
-        public JewleryItemsController(IJewleryItemService jewleryItemService)
+        public JewleryItemsController(IJewleryItemService jewleryItemService, ILogger logger)
         {
             this.jewleryItemService = jewleryItemService;
+            this.logger = logger;
         }
 
         // GET: api/JewleryItems
@@ -28,7 +30,7 @@ namespace ShopApi.Controllers
         {
             var items = await jewleryItemService.GetJewleryItems();
 
-            if (!items.Any())
+            if (items.Count() == 0)
             {
                 return NotFound();
             }
@@ -66,16 +68,10 @@ namespace ShopApi.Controllers
 
                 return Ok(item);
             }
-            catch (DbUpdateConcurrencyException)
+            catch (DbUpdateConcurrencyException exc)
             {
-                if (!jewleryItemService.JewleryItemExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                logger.LogError($"{nameof(JewleryItemsController)} :: exception occured {exc}");
+                throw;
             }
         }
 
